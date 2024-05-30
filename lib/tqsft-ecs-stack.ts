@@ -14,14 +14,14 @@ export class TqsftEcsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const keyPairName = new cdk.CfnParameter(this, "keyPairName", {
+    const keyPairName = new cdk.CfnParameter(this, "KeyPairName", {
       type: "String",
       description: "Key Pair Name for SSH Access",
     });
 
     // Getting VPC Id from SSM Parameter Store for lookup 
     const vpcId = StringParameter.valueFromLookup(this, 'TqsftStack-VpcId');
-    const clusterName = 'Ec2Cluster';
+    const clusterName = 'TqsftCluster';
 
     const vpc = Vpc.fromLookup(this, "vpc", {
       vpcId: vpcId
@@ -38,7 +38,7 @@ export class TqsftEcsStack extends cdk.Stack {
     const userData = UserData.custom(rawData);
 
     // Logs for Cluster 
-    const nginxLogGroup = new LogGroup(this, 'nginxLogGroup', {
+    const nginxLogGroup = new LogGroup(this, 'TqsftEcsLogGroup', {
       logGroupName: '/ecs/tqsft-services',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       retention: RetentionDays.ONE_MONTH
@@ -82,7 +82,7 @@ export class TqsftEcsStack extends cdk.Stack {
       autoScalingGroup: AmazonLinux2023ASG,
       machineImageType: MachineImageType.AMAZON_LINUX_2,
       enableManagedTerminationProtection: false,
-      capacityProviderName: "Ec2ClusterAsgCapProvider"
+      capacityProviderName: "AL2023AsgCapProvider"
     })
 
     /**
@@ -111,7 +111,7 @@ export class TqsftEcsStack extends cdk.Stack {
       autoScalingGroup: bottlerocketASG,
       machineImageType: MachineImageType.BOTTLEROCKET,
       enableManagedTerminationProtection: false,
-      capacityProviderName: "BottlerocketCapProvider"
+      capacityProviderName: "BottlerocketAsgCapProvider"
     })
 
     ecsCluster.addAsgCapacityProvider(capacityProviderBr, {
@@ -171,14 +171,29 @@ export class TqsftEcsStack extends cdk.Stack {
     /**
      *  Outputs 
      */
-    new StringParameter(this, 'TqsftStackNLBArn', {
+    new StringParameter(this, 'TqsftNLBArn', {
       parameterName: 'TqsftStack-NLBArn',
       stringValue: nlb.loadBalancerArn
     })
 
-    new StringParameter(this, 'TqsftStackNLBSG', {
+    new StringParameter(this, 'TqsftNLBSG', {
       parameterName: 'TqsftStack-NLBSG',
       stringValue: nlbSg.securityGroupId
+    })
+
+    new cdk.CfnOutput(this, 'TqsftNLBArnOutput', {
+      exportName: 'TqsftStack-NLBArn',
+      value: nlb.loadBalancerArn
+    })
+
+    new cdk.CfnOutput(this, 'TqsftNLBSGOutput', {
+      exportName: 'TqsftStack-NLBSG',
+      value: nlbSg.securityGroupId
+    })
+
+    new cdk.CfnOutput(this, 'TqsftClusterName', {
+      exportName: 'TqsftStack-ClusterName',
+      value: clusterName
     })
 
   }
