@@ -14,6 +14,7 @@ export class TqsftEcsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const vpcCidr = cdk.Fn.importValue('Tqsft-VpcCidr');
     const keyPairName = new cdk.CfnParameter(this, "KeyPairName", {
       type: "String",
       description: "Key Pair Name for SSH Access",
@@ -55,6 +56,19 @@ export class TqsftEcsStack extends cdk.Stack {
      *  AMAZON LINUX 2023 ASG
      */
 
+    const amazonLinux2023SG = new SecurityGroup(this, "AmazonLinux2023SG", {
+      vpc: vpc,
+      securityGroupName: "AmazonLinux2023SG",
+      allowAllOutbound: true,
+      allowAllIpv6Outbound: true
+    });
+
+    amazonLinux2023SG.addIngressRule(
+      Peer.ipv4(vpcCidr), 
+      Port.allTraffic(), 
+      "Ingress All Trafic in the subnet"
+    )
+
     const keyPair = KeyPair.fromKeyPairName(this, "KeyPair", keyPairName.valueAsString);
 
     const launchTemplate = new LaunchTemplate(this, "LaunchTemplate", {
@@ -64,19 +78,25 @@ export class TqsftEcsStack extends cdk.Stack {
       machineImage: MachineImage.fromSsmParameter(
         "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id", {
           os: OperatingSystemType.LINUX,
-          userData: userData
+          // userData: userData
         }
       ),
       keyPair: keyPair,
-      launchTemplateName: "AmazonLinuxLaunchTemplate"
+      launchTemplateName: "AmazonLinuxLaunchTemplate",
+      securityGroup: amazonLinux2023SG
     });
 
     const AmazonLinux2023ASG = new AutoScalingGroup(this, 'AL2023Asg', {
       vpc: vpc,
       launchTemplate: launchTemplate,
       minCapacity: 0,
-      maxCapacity: 1
+      maxCapacity: 1,
+      autoScalingGroupName: 'AmazonLinux2023Asg'
     })
+
+    AmazonLinux2023ASG.addUserData(
+      'dnf install wireguard-tools'
+    );
 
     const capacityProviderBr = new AsgCapacityProvider(this, 'AL2023AsgCapProvider', {
       autoScalingGroup: AmazonLinux2023ASG,
@@ -88,6 +108,20 @@ export class TqsftEcsStack extends cdk.Stack {
     /**
      *  BOTTLEROCKET ASG
      */
+
+    const bottlerocketSG = new SecurityGroup(this, "BottlerocketSG", {
+      vpc: vpc,
+      securityGroupName: "BottlerocketSG",
+      allowAllOutbound: true,
+      allowAllIpv6Outbound: true
+    });
+
+    bottlerocketSG.addIngressRule(
+      Peer.ipv4(vpcCidr), 
+      Port.allTraffic(), 
+      "Ingress All Trafic in the subnet"
+    )
+
     const bottlerocketLaunchTemplate = new LaunchTemplate(this, "BRLaunchTemplate", {
       // requireImdsv2: true,
       role: instanceRole,
@@ -97,14 +131,16 @@ export class TqsftEcsStack extends cdk.Stack {
           os: OperatingSystemType.UNKNOWN,
         }
       ),
-      launchTemplateName: "BottleRocketLaunchTemplate"
+      launchTemplateName: "BottleRocketLaunchTemplate",
+      securityGroup: bottlerocketSG
     });
 
     const bottlerocketASG = new AutoScalingGroup(this, 'BottlerocketASG' , {
       vpc: vpc,
       launchTemplate: bottlerocketLaunchTemplate,
       minCapacity: 0,
-      maxCapacity: 1
+      maxCapacity: 1,
+      autoScalingGroupName: 'BottlerocketASG'
     })
 
     const capacityProviderBottlerocket = new AsgCapacityProvider(this, 'BottlerocketCapProvider', {
