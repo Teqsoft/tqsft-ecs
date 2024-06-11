@@ -40,7 +40,7 @@ export class TqsftEcsStack extends cdk.Stack {
       vpc: vpc,
     })
 
-    const TqsftDnsNs = new PrivateDnsNamespace(this, "PrivateDnsNS", {
+    const TqsftDnsNs = new PrivateDnsNamespace(this, "Private-DnsNS", {
       name: dnsNs.valueAsString,
       vpc: vpc,
       description: "Private DnsNS for Teqsoft Services"
