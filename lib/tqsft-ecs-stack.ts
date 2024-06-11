@@ -5,6 +5,7 @@ import { AsgCapacityProvider, Cluster, MachineImageType, } from 'aws-cdk-lib/aws
 import { NetworkLoadBalancer, } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { PrivateDnsNamespace } from 'aws-cdk-lib/aws-servicediscovery';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { readFileSync } from 'fs';
@@ -20,6 +21,11 @@ export class TqsftEcsStack extends cdk.Stack {
       description: "Key Pair Name for SSH Access",
     });
 
+    const dnsNs = new cdk.CfnParameter(this, "PrivateDnsNS", {
+      type: "String",
+      description: "Private Domain Namespace for "
+    })
+
     // Getting VPC Id from SSM Parameter Store for lookup 
     const vpcId = StringParameter.valueFromLookup(this, 'TqsftStack-VpcId');
     const clusterName = 'TqsftCluster';
@@ -32,6 +38,12 @@ export class TqsftEcsStack extends cdk.Stack {
     const ecsCluster = new Cluster(this, clusterName, {
       clusterName,
       vpc: vpc,
+    })
+
+    const TqsftDnsNs = new PrivateDnsNamespace(this, "PrivateDnsNS", {
+      name: dnsNs.valueAsString,
+      vpc: vpc,
+      description: "Private DnsNS for Teqsoft Services"
     })
 
     // User Data to load on Servers this is for Amazon-Linux
@@ -230,6 +242,21 @@ export class TqsftEcsStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'TqsftClusterName', {
       exportName: 'TqsftStack-ClusterName',
       value: clusterName
+    })
+
+    new cdk.CfnOutput(this, 'TqsftNsArn', {
+      exportName: 'TqsftStack-NsArn',
+      value: TqsftDnsNs.namespaceArn
+    })
+
+    new cdk.CfnOutput(this, 'TqsftNsId', {
+      exportName: 'TqsftStack-NsId',
+      value: TqsftDnsNs.namespaceId
+    })
+
+    new cdk.CfnOutput(this, 'TqsftNsName', {
+      exportName: 'TqsftStack-NsName',
+      value: TqsftDnsNs.namespaceName
     })
 
   }

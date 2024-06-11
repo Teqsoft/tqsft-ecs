@@ -28,5 +28,5 @@ jobs:
        with:
          cdk_subcommand: 'deploy'
          cdk_stack: 'TqsftEcsStack'
-         cdk_args: '--parameters KeyPairName=${{ vars.KEY_PAIR_NAME }} --require-approval never' 
+         cdk_args: '--parameters KeyPairName=${{ vars.KEY_PAIR_NAME }} --parameters PrivateDnsNS=${{ vars.PRIVATE_DNS_NS }} --require-approval never' 
          actions_comment: false
