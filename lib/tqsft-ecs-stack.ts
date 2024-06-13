@@ -86,7 +86,7 @@ export class TqsftEcsStack extends cdk.Stack {
     const launchTemplate = new LaunchTemplate(this, "LaunchTemplate", {
       // requireImdsv2: true,
       role: instanceRole,
-      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
+      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.SMALL),
       machineImage: MachineImage.fromSsmParameter(
         "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id", {
           os: OperatingSystemType.LINUX,
