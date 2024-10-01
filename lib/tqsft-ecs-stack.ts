@@ -86,7 +86,7 @@ export class TqsftEcsStack extends cdk.Stack {
     const launchTemplate = new LaunchTemplate(this, "LaunchTemplate", {
       // requireImdsv2: true,
       role: instanceRole,
-      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.SMALL),
+      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
       machineImage: MachineImage.fromSsmParameter(
         "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id", {
           os: OperatingSystemType.LINUX,
@@ -121,123 +121,169 @@ export class TqsftEcsStack extends cdk.Stack {
      *  BOTTLEROCKET ASG
      */
 
-    const bottlerocketSG = new SecurityGroup(this, "BottlerocketSG", {
+    // const bottlerocketSG = new SecurityGroup(this, "BottlerocketSG", {
+    //   vpc: vpc,
+    //   securityGroupName: "BottlerocketSG",
+    //   allowAllOutbound: true,
+    //   allowAllIpv6Outbound: true
+    // });
+
+    // bottlerocketSG.addIngressRule(
+    //   Peer.ipv4(vpcCidr), 
+    //   Port.allTraffic(), 
+    //   "Ingress All Trafic in the subnet"
+    // )
+
+    // const bottlerocketLaunchTemplate = new LaunchTemplate(this, "BRLaunchTemplate", {
+    //   // requireImdsv2: true,
+    //   role: instanceRole,
+    //   instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
+    //   machineImage: MachineImage.fromSsmParameter(
+    //     "/aws/service/bottlerocket/aws-ecs-1/arm64/latest/image_id", {
+    //       os: OperatingSystemType.UNKNOWN,
+    //     }
+    //   ),
+    //   launchTemplateName: "BottleRocketLaunchTemplate",
+    //   securityGroup: bottlerocketSG
+    // });
+
+    // const bottlerocketASG = new AutoScalingGroup(this, 'BottlerocketASG' , {
+    //   vpc: vpc,
+    //   launchTemplate: bottlerocketLaunchTemplate,
+    //   minCapacity: 0,
+    //   maxCapacity: 1,
+    //   autoScalingGroupName: 'BottlerocketASG'
+    // })
+
+    // const capacityProviderBottlerocket = new AsgCapacityProvider(this, 'BottlerocketCapProvider', {
+    //   autoScalingGroup: bottlerocketASG,
+    //   machineImageType: MachineImageType.BOTTLEROCKET,
+    //   enableManagedTerminationProtection: false,
+    //   capacityProviderName: "BottlerocketAsgCapProvider"
+    // });
+
+    // ecsCluster.addAsgCapacityProvider(capacityProviderBottlerocket, {
+    //   machineImageType: MachineImageType.BOTTLEROCKET
+    // })
+
+    // bottlerocketASG.addUserData(
+    //   'allow-privileged-containers = true',
+    //   '',
+    //   '[settings.oci-defaults.capabilities]',
+    //   'sys-admin = true',
+    //   'net-admin = true',
+    //   '',
+    //   '[settings.kernel.sysctl]',
+    //   '"net.ipv4.conf.all.src_valid_mark" = "1"',
+    //   '"net.ipv4.conf.all.proxy_arp" = "1"',
+    //   '"net.ipv4.ip_forward" = "1"'
+    // );
+
+    const al2023x68SG = new SecurityGroup(this, "AL2023x68SG", {
       vpc: vpc,
-      securityGroupName: "BottlerocketSG",
+      securityGroupName: "AL2023X64SG",
       allowAllOutbound: true,
       allowAllIpv6Outbound: true
     });
 
-    bottlerocketSG.addIngressRule(
+    al2023x68SG.addIngressRule(
       Peer.ipv4(vpcCidr), 
       Port.allTraffic(), 
       "Ingress All Trafic in the subnet"
     )
 
-    const bottlerocketLaunchTemplate = new LaunchTemplate(this, "BRLaunchTemplate", {
+    const al2023x68LaunchTemplate = new LaunchTemplate(this, "BRLaunchTemplate", {
       // requireImdsv2: true,
       role: instanceRole,
-      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
+      instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MICRO),
       machineImage: MachineImage.fromSsmParameter(
-        "/aws/service/bottlerocket/aws-ecs-1/arm64/latest/image_id", {
-          os: OperatingSystemType.UNKNOWN,
+        "/aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id", {
+          os: OperatingSystemType.LINUX,
         }
       ),
-      launchTemplateName: "BottleRocketLaunchTemplate",
-      securityGroup: bottlerocketSG
+      launchTemplateName: "AL2023x64LaunchTemplate",
+      keyPair: keyPair,
+      securityGroup: al2023x68SG
     });
 
-    const bottlerocketASG = new AutoScalingGroup(this, 'BottlerocketASG' , {
+    const al2023x64ASG = new AutoScalingGroup(this, 'AL2023x64ASG' , {
       vpc: vpc,
-      launchTemplate: bottlerocketLaunchTemplate,
+      launchTemplate: al2023x68LaunchTemplate,
       minCapacity: 0,
       maxCapacity: 1,
-      autoScalingGroupName: 'BottlerocketASG'
+      autoScalingGroupName: 'AL2023x64ASG'
     })
 
-    const capacityProviderBottlerocket = new AsgCapacityProvider(this, 'BottlerocketCapProvider', {
-      autoScalingGroup: bottlerocketASG,
-      machineImageType: MachineImageType.BOTTLEROCKET,
+    const capacityProviderAL2023x64 = new AsgCapacityProvider(this, 'AL2023x64CapProvider', {
+      autoScalingGroup: al2023x64ASG,
+      machineImageType: MachineImageType.AMAZON_LINUX_2,
       enableManagedTerminationProtection: false,
-      capacityProviderName: "BottlerocketAsgCapProvider"
+      capacityProviderName: "AL2023x64AsgCapProvider"
     })
 
     ecsCluster.addAsgCapacityProvider(capacityProviderBr, {
       machineImageType: MachineImageType.AMAZON_LINUX_2
     })
 
-    ecsCluster.addAsgCapacityProvider(capacityProviderBottlerocket, {
-      machineImageType: MachineImageType.BOTTLEROCKET
+    ecsCluster.addAsgCapacityProvider(capacityProviderAL2023x64, {
+      machineImageType: MachineImageType.AMAZON_LINUX_2
     })
-
-    bottlerocketASG.addUserData(
-      'allow-privileged-containers = true',
-      '',
-      '[settings.oci-defaults.capabilities]',
-      'sys-admin = true',
-      'net-admin = true',
-      '',
-      '[settings.kernel.sysctl]',
-      '"net.ipv4.conf.all.src_valid_mark" = "1"',
-      '"net.ipv4.conf.all.proxy_arp" = "1"',
-      '"net.ipv4.ip_forward" = "1"'
-    );
 
     /**
      *  Security Group for the Network Load Balancer
      */
-    const nlbSg = new SecurityGroup(this, "NlbSecurityGroup", {
-      vpc: vpc,
-      securityGroupName: "NlbSecurityGroup"
-    });
+    // const nlbSg = new SecurityGroup(this, "NlbSecurityGroup", {
+    //   vpc: vpc,
+    //   securityGroupName: "NlbSecurityGroup"
+    // });
 
-    nlbSg.addIngressRule(
-      Peer.anyIpv4(), 
-      Port.tcp(80), 
-      "Ingress for HTTP"
-    )
+    // nlbSg.addIngressRule(
+    //   Peer.anyIpv4(), 
+    //   Port.tcp(80), 
+    //   "Ingress for HTTP"
+    // )
 
-    nlbSg.addIngressRule(
-      Peer.anyIpv4(), 
-      Port.tcp(443), 
-      "Ingress for HTTPS"
-    )
+    // nlbSg.addIngressRule(
+    //   Peer.anyIpv4(), 
+    //   Port.tcp(443), 
+    //   "Ingress for HTTPS"
+    // )
 
     /**
      *  Main Network Load Balancer
      */
-    const nlb = new NetworkLoadBalancer(this, 'nlb', {
-      vpc: vpc,
-      internetFacing: true,
-      loadBalancerName: "TqsftMainNLB",
-      vpcSubnets: {
-        subnetType: SubnetType.PUBLIC
-      },
-      securityGroups: [ nlbSg ]
-    })
+    // const nlb = new NetworkLoadBalancer(this, 'nlb', {
+    //   vpc: vpc,
+    //   internetFacing: true,
+    //   loadBalancerName: "TqsftMainNLB",
+    //   vpcSubnets: {
+    //     subnetType: SubnetType.PUBLIC
+    //   },
+    //   securityGroups: [ nlbSg ]
+    // })
 
     /**
      *  Outputs 
      */
-    new StringParameter(this, 'TqsftNLBArn', {
-      parameterName: 'TqsftStack-NLBArn',
-      stringValue: nlb.loadBalancerArn
-    })
+    // new StringParameter(this, 'TqsftNLBArn', {
+    //   parameterName: 'TqsftStack-NLBArn',
+    //   stringValue: nlb.loadBalancerArn
+    // })
 
-    new StringParameter(this, 'TqsftNLBSG', {
-      parameterName: 'TqsftStack-NLBSG',
-      stringValue: nlbSg.securityGroupId
-    })
+    // new StringParameter(this, 'TqsftNLBSG', {
+    //   parameterName: 'TqsftStack-NLBSG',
+    //   stringValue: nlbSg.securityGroupId
+    // })
 
-    new cdk.CfnOutput(this, 'TqsftNLBArnOutput', {
-      exportName: 'TqsftStack-NLBArn',
-      value: nlb.loadBalancerArn
-    })
+    // new cdk.CfnOutput(this, 'TqsftNLBArnOutput', {
+    //   exportName: 'TqsftStack-NLBArn',
+    //   value: nlb.loadBalancerArn
+    // })
 
-    new cdk.CfnOutput(this, 'TqsftNLBSGOutput', {
-      exportName: 'TqsftStack-NLBSG',
-      value: nlbSg.securityGroupId
-    })
+    // new cdk.CfnOutput(this, 'TqsftNLBSGOutput', {
+    //   exportName: 'TqsftStack-NLBSG',
+    //   value: nlbSg.securityGroupId
+    // })
 
     new cdk.CfnOutput(this, 'TqsftClusterName', {
       exportName: 'TqsftStack-ClusterName',
