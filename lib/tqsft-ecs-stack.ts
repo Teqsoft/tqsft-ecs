@@ -3,7 +3,7 @@ import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
 import { BlockDeviceVolume, EbsDeviceVolumeType, InstanceClass, InstanceSize, InstanceType, KeyPair, LaunchTemplate, MachineImage, OperatingSystemType, Peer, Port, SecurityGroup, SubnetType, UserData, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { AsgCapacityProvider, Cluster, MachineImageType, } from 'aws-cdk-lib/aws-ecs';
 import { NetworkLoadBalancer, } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { Effect, ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { PrivateDnsNamespace } from 'aws-cdk-lib/aws-servicediscovery';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
@@ -63,6 +63,15 @@ export class TqsftEcsStack extends cdk.Stack {
       roleName: "Ec2ClusterInstanceProfile"
     });
     instanceRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'));
+    instanceRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        "ecs:RegisterContainerInstance"
+      ],
+      resources: [
+        "*"
+      ]
+    }))
 
     /**
      *  AMAZON LINUX 2023 ASG
