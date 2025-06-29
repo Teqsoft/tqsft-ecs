@@ -87,12 +87,15 @@ export class TqsftEcsStack extends cdk.Stack {
       // requireImdsv2: true,
       role: instanceRole,
       instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
-      machineImage: MachineImage.fromSsmParameter(
-        "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id", {
-          os: OperatingSystemType.LINUX,
-          // userData: userData
-        }
-      ),
+      // machineImage: MachineImage.fromSsmParameter(
+      //   "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id", {
+      //     os: OperatingSystemType.LINUX,
+      //     // userData: userData
+      //   }
+      // ),
+      machineImage: MachineImage.genericLinux({
+        "us-east-1": "ami-0e61e6aebc8334403"
+      }),
       keyPair: keyPair,
       launchTemplateName: "AmazonLinuxLaunchTemplate",
       securityGroup: amazonLinux2023SG,
