@@ -95,6 +95,8 @@ export class TqsftEcsStack extends cdk.Stack {
       // ),
       machineImage: MachineImage.genericLinux({
         "us-east-1": "ami-0e61e6aebc8334403"
+      },{
+        userData: userData
       }),
       keyPair: keyPair,
       launchTemplateName: "AmazonLinuxLaunchTemplate",
