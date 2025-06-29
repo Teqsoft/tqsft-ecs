@@ -63,11 +63,14 @@ export class TqsftEcsStack extends cdk.Stack {
       roleName: "Ec2ClusterInstanceProfile"
     });
     instanceRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'));
+    instanceRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerServiceforEC2Role'))
     instanceRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
         "ecs:RegisterContainerInstance",
-        "ecs:DiscoverPollEndpoint"
+        "ecs:DiscoverPollEndpoint",
+        "ecs:CreateCluster",
+        "ecs:StartTelemetrySession"
       ],
       resources: [
         "*"
