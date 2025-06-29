@@ -66,7 +66,8 @@ export class TqsftEcsStack extends cdk.Stack {
     instanceRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
-        "ecs:RegisterContainerInstance"
+        "ecs:RegisterContainerInstance",
+        "ecs:DiscoverPollEndpoint"
       ],
       resources: [
         "*"
